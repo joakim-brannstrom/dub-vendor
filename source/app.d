@@ -16,13 +16,17 @@ int main(string[] args) {
     confLogger(VerboseMode.info);
 
     auto conf = parseUserArgs(args);
-    setLogLevel(conf.global.loggLvls);
-
     if (conf.global.helpInfo.helpWanted) {
         return cli(conf);
     }
 
-    confLogger(conf.global.verbosity);
+    try {
+        confLogger(conf.global.verbosity);
+        setLogLevel(conf.global.loggLvls);
+    } catch (Exception e) {
+        logger.info("Loggers ", getRegisteredLoggers);
+        return cli(conf);
+    }
 
     import std.variant : visit;
 
@@ -204,7 +208,6 @@ Config parseUserArgs(string[] args) {
             try {
                 conf.global.loggLvls = parseLogNames(rawLoggLvls);
             } catch (Exception e) {
-                logger.info("Loggers ", getRegisteredLoggers);
             }
         }
 
