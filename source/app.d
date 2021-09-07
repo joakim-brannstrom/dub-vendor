@@ -6,7 +6,7 @@ Author: Joakim Brännström (joakim.brannstrom@gmx.com)
 module app;
 
 import logger = std.experimental.logger;
-import std.algorithm : joiner;
+import std.algorithm : joiner, map, among;
 
 import colorlog;
 import my.named_type;
@@ -33,7 +33,7 @@ int main(string[] args) {
     // dfmt off
     return conf.data.visit!(
           (Config.Help a) => cli(conf),
-          (Config.Init a) => cli(a),
+          (Config.Copy a) => cli(a),
     );
     // dfmt on
 }
@@ -51,7 +51,9 @@ int cli(Config conf) {
     return 0;
 }
 
-int cli(Config.Init conf) {
+int cli(Config.Copy conf) {
+    import std.uni : byGrapheme, Grapheme, byCodePoint;
+    import std.conv : text;
     import std.process : spawnProcess, wait;
     import dub_vendor.dub;
     import my.set;
@@ -73,7 +75,8 @@ int cli(Config.Init conf) {
     copied.add(dub.rootPackage.name.get);
     foreach (dep; dub.dependencies.byValue) {
         if (dep.name.get !in copied) {
-            const dst = Path("vendor") ~ dep.name.get;
+            const dst = Path("vendor") ~ dep.name.get.byGrapheme.map!(a => a.among(Grapheme(':'))
+                    ? Grapheme('_') : a).byCodePoint.text;
             log.infof("copy %s -> %s", dep.path, dst);
             if (spawnProcess(rsyncCmd ~ [dep.path.toString ~ "/", dst.toString]).wait != 0) {
                 log.warning("Failed to copy ", dep.name.get);
@@ -103,14 +106,14 @@ struct Config {
         std.getopt.GetoptResult helpInfo;
     }
 
-    static struct Init {
+    static struct Copy {
         std.getopt.GetoptResult helpInfo;
         static string helpDescription = "initial vendoring of dependencies";
         NamedType!(string[], Tag!"DubArgs", string[].init, TagStringable) dubArgs;
         NamedType!(bool, Tag!"RsyncUseDelete", bool.init, TagStringable) deleteDst;
     }
 
-    alias Type = Algebraic!(Help, Init);
+    alias Type = Algebraic!(Help, Copy);
     Type data;
 
     Global global;
@@ -215,8 +218,8 @@ Config parseUserArgs(string[] args) {
             conf.data = Config.Help.init;
         }
 
-        void initParse() {
-            Config.Init data;
+        void copyParse() {
+            Config.Copy data;
             scope (success)
                 conf.data = data;
 
