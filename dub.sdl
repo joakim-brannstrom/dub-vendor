@@ -4,9 +4,8 @@ authors "Joakim Brännström"
 copyright "Copyright © 2019, Joakim Brännström"
 license "BSL-1.0"
 
-dependency "colorlog" version="~>0.0.6"
-dependency "sumtype" version="~>1.1.1"
-dependency "my" version="~>0.0.32"
+dependency "colorlog" version="~>0.0.10"
+dependency "mylib" version="~>0.0.41"
 
 targetPath "build"
 
